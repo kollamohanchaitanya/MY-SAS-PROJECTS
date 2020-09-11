@@ -1,0 +1,52 @@
+ proc freq data=mohan noprint;
+table ethnic*trt01a / out=third (drop=percent);
+run;
+
+ data third1;
+ set third;
+ if trt01a="100 MG BP3304" then denom=&trt1;
+  if trt01a="PLACEBO" then denom=&trt2;
+  if trt01a="overall" then denom=&trt3;
+  percentage=put((count/denom)*100,7.1);
+  cp=count||" ("||percentage||")";
+  drop count denom percentage;
+  RUN;
+  
+  
+proc sort data=third1;
+by ethnic;
+run;
+
+
+proc transpose data=third1 out=third2(drop=_name_);
+by ethnic;
+id trt01a;
+var cp;
+run;
+
+data third3;
+length ethnic $ 50;
+set third2;
+if ethnic="HISPANIC OR LATINO" then do;
+ ord=1;
+ end;
+if ethnic="NOT HISPANIC OR LATINO" then do;
+ ord=2;
+ end;
+ run;
+  
+  proc sort data=third3;
+  by ord;
+  run;
+  
+  data third4;
+  length ethnic $ 50;
+  ethnic="Ethnicity [n (%)]";
+  run;
+  
+  data ethnicfinal;
+  set third4 third3;
+  if _n_ gt 1 then ethnic="    "||ethnic;
+  key=ethnic;
+  drop ord;
+  run;

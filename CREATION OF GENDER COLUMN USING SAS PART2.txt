@@ -1,0 +1,66 @@
+
+proc freq data=mohan noprint;
+table sex*trt01a / out=cha1 (drop=percent);
+run;
+
+
+proc sql noprint;
+select count(distinct USUBJID)into : trt1 from mohan where trt01a="100 MG BP3304";
+select count(distinct USUBJID)into : trt2 from mohan where trt01a="PLACEBO";
+select count(distinct USUBJID)into : trt3 from mohan where trt01a="overall";
+%PUT trt1 trt2 trt3;
+quit;
+ 
+ 
+ 
+ data sec1;
+ set cha1;
+ if trt01a="100 MG BP3304" then denom=&trt1;
+  if trt01a="PLACEBO" then denom=&trt2;
+  if trt01a="overall" then denom=&trt3;
+  percentage=put((count/denom)*100,7.1);
+  cp=count||" ("||percentage||")";
+  drop count denom percentage;
+  RUN;
+  
+  
+proc sort data=sec1;
+by sex;
+run;
+
+
+proc transpose data=sec1 out=sec2(drop=_name_);
+by sex;
+id trt01a;
+var cp;
+run;
+
+data sec3;
+length sex $ 50;
+set sec2;
+if sex="M" then do;
+ sex="Male";
+ ord=1;
+ end;
+if sex="F" then do;
+ sex="Female";
+ ord=2;
+ end;
+ run;
+  
+  proc sort data=sec3;
+  by ord;
+  run;
+  
+  data sec4;
+  length sex $ 50;
+  sex="Gender [n (%)]^";
+  run;
+  
+  data secfinal;
+  set sec4 sec3;
+  if _n_ gt 1 then sex="    "||sex;
+  key=sex;
+  drop ord;
+  run;
+  

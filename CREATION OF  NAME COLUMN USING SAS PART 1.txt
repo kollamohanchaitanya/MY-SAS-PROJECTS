@@ -1,0 +1,70 @@
+data chaitu;
+set sasuser.pro;
+keep usubjid age sex ethnic race trt01a saffl;
+run;
+
+data mohan;
+ set chaitu;
+ output;
+ trt01A="overall";
+ output;
+ run;
+ 
+ PROC means data=mohan;
+ var age;
+ run;
+ 
+ proc means data=mohan;
+ class TRT01A;
+ var age;
+ OUTPUT OUT=sts (drop=_type_ _freq_)
+ n=_n
+ mean=_mean
+ std=_std
+ min=_min
+ max=_max
+ median=_median;
+ drop type;
+ run;
+ 
+ data mc3;
+ length n meanstd minmax median $ 30;
+ set sts;
+ n=put(_n,5.);
+ meanstd=put(_mean,7.1)||"("||put(_std,8.2)||")";
+ minmax=put(_min,7.1)||","||put(_max,8.2);
+ median=put(_median,7.1);
+ if trt01a ne " ";
+ drop _n _mean _std _min _max _median;
+ run;
+ 
+ proc sort data=mc3 out=mc4;
+ by trt01a;
+ run;
+ 
+ proc transpose data=mc4 out=mc5;
+ id trt01a;
+ var n meanstd median  minmax;
+ run;
+ 
+ data mc6;
+ length _NAME_ $ 50;
+ SET mc5;
+ if _NAME_="n" then _NAME_=" N";
+ if _NAME_="meanstd" then _NAME_=" Mean (std)";
+ if _NAME_="median" then _NAME_=" Median";
+ if _NAME_="minmax" then _NAME_=" min,max";
+ run;
+ 
+ 
+ DATA mc7;
+ length _name_ $ 50;
+ _name_="age( years)";
+ run;
+ 
+ data final;
+ set mc7 mc6;
+ if _n_ gt 1 then _name_="  "||_name_;
+ key=_name_;
+ run;
+ 

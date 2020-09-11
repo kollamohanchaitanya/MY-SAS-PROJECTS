@@ -1,0 +1,115 @@
+  proc freq data=mohan noprint;
+table race*trt01a / out=fourth (drop=percent);
+_
+run;
+
+ data fourth1;
+ set fourth;
+ if trt01a="100 MG BP3304" then denom=&trt1;
+ if trt01a="PLACEBO" then denom=&trt2;
+ if trt01a="overall" then denom=&trt3;
+  percentage=put((count/denom)*100,7.1);
+  cp=count||" ("||percentage||")";
+  drop count denom percentage;
+  RUN;
+  
+  
+proc sort data=fourth1;
+by race;
+run;
+
+
+proc transpose data=fourth1 out=fourth2(drop=_name_);
+by race;
+id trt01a;
+var cp;
+run;
+
+data fourth3;
+length race $ 50;
+set fourth2;
+run;
+
+data dummy;
+input race=$ _100_MG_BP3304=$ overall=$ PLACEBO=$;
+cards;
+RACE=WHITE _100_MG_BP3304=0 (0,0) overall=0 (0,0) PLACEBO=0 (0,0)
+RACE=BLACK _100_MG_BP3304=0 (0,0) overall=0 (0,0) PLACEBO=0 (0,0)
+RACE=ASIAN _100_MG_BP3304=0 (0,0) overall=0 (0,0) PLACEBO=0 (0,0)
+RACE=AMERICAN INDIAN _100_MG_BP3304=0 (0,0) overall=0 (0,0) PLACEBO=0 (0,0)
+RACE=HAWALLIAN _100_MG_BP3304=0 (0,0) overall=0 (0,0) PLACEBO=0 (0,0)
+;
+Run;
+
+PROC SORT data=dummy;
+by RACE;
+run;
+
+proc sort data=fourth3;
+by race;
+run;
+
+data finalmerge;
+merge dummy fourth3;
+run;
+
+
+
+proc format;
+value $rc
+WHITE="White"
+BLACK="Black or African American"
+ASIAN="Asian"
+AMERICAN INDIAN="american Indian or Alaskan native"
+HAWAIIAN="Native hawaiian or other pacific ilanders"
+OTHER="Other";
+run;
+
+DATA finalmerge1;
+set finalmerge;
+race=put (race,rc.);
+run;
+
+  
+  data fourth4;
+  length race $ 50;
+  race="race [n (%)]";
+  run;
+  
+  data racefinal;
+  set fourth4 finalmerge1;
+  if _n_ gt 1 then race="    "||race;
+  if placebo="0 (0,0)" then placebo="          "||placebo;
+  if overall="0 (0,0)" then overall="          "||overall;
+  if MGBP3304="0 (0,0)" then MGPB3304="          "||MGBP3304;
+  key=race;
+ run;
+ 
+ DATA report (keep=key overall placebo MGBP3304);
+ set final secfinal ethnicfinal racefinal;
+ run;
+  
+  data report1;
+  retain key MGPB3304  placebo overall;
+  set report;
+  run;
+
+/***********************outlayer**********************/
+
+
+proc report data=report1 nowd headline headskip split="@";
+column ("--" key _100_MG_HR5520 PLACEBO overall ordx);
+define key ?" " width=34 display flow;
+define _100_MG_HR5520 /"HR5520@(N =%cmpress(&trt1))" width=25 center;
+define placebo /"placebo@(N =%cmpress(&trt2))" width=25 center;
+define overall /"overall@(N =%cmpress(&trt3))" width=25 center;
+define ordx/noprint order;
+break after ordx/skip;
+compute after;
+endcomp;
+title1"pharamaceutical company                                                      Date : 01sep2020";
+title2 "HR5520-001                                                                  program demographics.sas";
+title3 "                                                                             page 1 of 1;
+title4 "safety population";
+footnote " percentages are based on number of subjects in the population.";
+run;
