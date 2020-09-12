@@ -1,0 +1,2 @@
+Here in this project there is a clinical data format and its data set to manipulate. By using proc statistican functions the code  Starts manipulating data by selecting required input columns and change over them into given data format. Later it transpose rows into columns to satisfy given data format. At last it will add titles, footnotes and alligned outlayer of data format.
+This all are done by using SAS Programming.
